@@ -1171,3 +1171,403 @@ dialog {
     font-size: 11px;
   }
 }
+/* Optional focus companions stay out of the camera's way. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.studio-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 15px;
+}
+.studio-toolbar p {
+  margin: 0;
+  font-size: 11px;
+  color: #839274;
+}
+.studio-toolbar > div {
+  display: flex;
+  gap: 8px;
+}
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a0b77f;
+  margin-right: 7px;
+}
+.toolbar-button {
+  border: 1px solid #dce3d0;
+  background: #fdfef9;
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 10px;
+  color: #667e52;
+}
+.toolbar-button[aria-pressed="true"] {
+  background: #e5edda;
+  border-color: #a9bd91;
+}
+.self-view-cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #e8eddf;
+  color: #64794e;
+}
+.quiet-flower {
+  font-size: 65px;
+  color: #9bad7f;
+}
+.self-view-cover p {
+  font:
+    28px Georgia,
+    serif;
+  margin: 25px 10px 15px;
+  text-align: center;
+}
+.self-view-cover #quietTime {
+  font:
+    500 44px Manrope,
+    sans-serif;
+  letter-spacing: -1.5px;
+}
+.self-view-cover small {
+  margin-top: 22px;
+  font-size: 10px;
+  color: #879675;
+  text-align: center;
+  padding: 0 15px;
+}
+.focus-companions {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+.thought-card,
+.rhythm-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+}
+.tool-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tool-icon {
+  width: 33px;
+  height: 33px;
+  background: #eef2e6;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #89a16c;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.tool-heading h2 {
+  font:
+    500 17px Manrope,
+    sans-serif;
+  margin: 0 0 5px;
+  letter-spacing: -0.4px;
+}
+.tool-heading p {
+  margin: 0;
+  color: #8b9680;
+  font-size: 11px;
+}
+.thought-count {
+  margin-left: auto;
+  font:
+    12px Manrope,
+    sans-serif;
+  color: #8b9e78;
+  background: #f0f4e9;
+  border-radius: 5px;
+  padding: 5px 8px;
+}
+#thoughtForm {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+#thoughtForm input {
+  margin: 0;
+  font-size: 11px;
+}
+#thoughtForm button {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 10px 13px;
+}
+.thought-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  max-height: 120px;
+  overflow: auto;
+}
+.thought-list li {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  border-bottom: 1px solid #eff2e9;
+  padding: 8px 0;
+  font-size: 11px;
+  color: #6c7d5b;
+  overflow-wrap: anywhere;
+}
+.thought-list button {
+  background: none;
+  border: 0;
+  color: #a0ac91;
+  font-size: 18px;
+  align-self: start;
+}
+.tool-footnote {
+  font-size: 9px;
+  color: #a0aa95;
+  margin: 12px 0 0;
+}
+.rhythm-options {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 13px 12px;
+  margin-top: 20px;
+  font-size: 11px;
+  color: #6e7e5d;
+}
+.rhythm-options select {
+  padding: 7px 10px;
+  background: #f9faf5;
+  border: 1px solid #e1e6d7;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #5c714c;
+}
+.check-option {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+.check-option input {
+  width: 13px;
+  height: 13px;
+  accent-color: #607d49;
+  margin: 0;
+}
+.break-panel {
+  margin-top: 24px;
+  padding: 25px;
+  border: 1px solid #d1dec0;
+  background: #edf3e4;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.break-panel h2 {
+  font:
+    25px Georgia,
+    serif;
+  margin: 0;
+}
+.break-panel p:not(.eyebrow) {
+  font-size: 11px;
+  color: #889976;
+  margin-bottom: 0;
+}
+#breakTimer {
+  font:
+    35px Manrope,
+    sans-serif;
+  letter-spacing: -1px;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.break-panel .outline {
+  flex-shrink: 0;
+}
+.break-action {
+  width: 100%;
+  border: 0;
+  background: #eaf0df;
+  color: #66824e;
+  border-radius: 7px;
+  padding: 13px;
+  margin-top: 13px;
+  font-size: 11px;
+}
+.saved-thoughts {
+  margin: 12px 0;
+  padding: 12px 15px;
+  background: #edf2e4;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #6c8156;
+}
+.saved-thoughts summary {
+  cursor: pointer;
+}
+.saved-thoughts li {
+  padding: 4px 0;
+  overflow-wrap: anywhere;
+}
+body.quiet-mode header,
+body.quiet-mode .intro,
+body.quiet-mode .below,
+body.quiet-mode footer {
+  display: none;
+}
+body.quiet-mode main {
+  padding-top: 24px;
+}
+body.quiet-mode .workspace {
+  align-items: stretch;
+}
+body.quiet-mode .camera {
+  min-height: 380px;
+}
+body.quiet-mode .rhythm-card {
+  display: none;
+}
+body.quiet-mode .focus-companions {
+  grid-template-columns: 1fr;
+  max-width: 720px;
+  margin: 24px auto;
+}
+body.quiet-mode .thought-card {
+  background: transparent;
+  border-style: dashed;
+}
+body.quiet-mode .studio-toolbar p {
+  font-size: 12px;
+}
+button:not(:disabled),
+a {
+  transition:
+    background-color 0.15s,
+    opacity 0.15s;
+}
+button:disabled {
+  cursor: default;
+}
+@media (max-width: 740px) {
+  .studio-toolbar {
+    align-items: flex-start;
+  }
+  .studio-toolbar p {
+    font-size: 9px;
+    max-width: 140px;
+    line-height: 1.7;
+  }
+  .toolbar-button {
+    padding: 8px;
+    font-size: 9px;
+  }
+  .focus-companions {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .thought-card,
+  .rhythm-card {
+    padding: 20px;
+  }
+  .break-panel {
+    flex-wrap: wrap;
+    padding: 20px;
+    gap: 18px;
+  }
+  .break-panel > div {
+    width: 100%;
+  }
+  #breakTimer {
+    margin-left: 0;
+  }
+  .break-panel .outline {
+    margin-left: auto;
+  }
+  .tool-heading p {
+    font-size: 10px;
+  }
+  #thoughtForm input {
+    min-width: 0;
+  }
+  .capture-label {
+    font-size: 8px;
+  }
+  #captureCount {
+    font-size: 9px;
+  }
+}
+/* Keep the timeline and save controls within easy reach on a laptop. */
+.result-stage {
+  height: clamp(180px, 28vh, 300px);
+  aspect-ratio: auto;
+  max-height: none;
+}
+.result-stage canvas,
+.result-stage #resultVideo {
+  max-height: none;
+  height: 100%;
+  width: 100%;
+}
+.filmstrip {
+  max-height: 76px;
+}
+.filmstrip button {
+  aspect-ratio: auto;
+  min-height: 60px;
+}
+dialog .eyebrow {
+  margin-bottom: 8px;
+}
+.dialog-heading h2 {
+  font-size: 27px;
+  margin-bottom: 17px;
+}
+#resultInfo {
+  margin: 12px 0;
+}
+.dialog-actions .outline {
+  font-size: 11px;
+}
+#cancelExport {
+  color: #94765a;
+}
+.dialog-heading #closeResult {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  border-radius: 6px;
+  z-index: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

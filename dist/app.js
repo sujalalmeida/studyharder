@@ -85,6 +85,7 @@ async function enableCamera() {
       $("preview").srcObject = stream;
       await $("preview").play();
       $("preview").style.display = "block";
+      $("hideSelf").disabled = false;
       $("placeholder").hidden = true;
       $("cameraStatus").innerHTML = "<i></i> CAMERA READY";
       stream.getVideoTracks()[0].addEventListener("ended", () => {
@@ -112,6 +113,8 @@ async function enableCamera() {
   return cameraRequest;
 }
 function resetCamera() {
+  $("hideSelf").disabled = true;
+  setSelfView(false);
   stream?.getTracks().forEach((t) => t.stop());
   stream = null;
   $("preview").srcObject = null;
@@ -122,6 +125,7 @@ function resetCamera() {
 }
 async function requestWakeLock() {
   try {
+    if (wakeLock && !wakeLock.released) return;
     wakeLock = await navigator.wakeLock?.request("screen");
   } catch {}
 }
@@ -151,24 +155,43 @@ function capture() {
         canvas.toBlob(resolve, "image/jpeg", 0.72),
       );
       if (!blob) throw new Error("Could not capture a frame.");
-      await transaction("frames", "readwrite", (store) =>
-        store.put({
+      const at = elapsed;
+      const next = {
+        ...current,
+        frames: current.frames + 1,
+        elapsed: at,
+        thoughts: [...parkedThoughts],
+      };
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(["frames", "sessions"], "readwrite");
+        tx.objectStore("frames").put({
           sessionId: current.id,
           index: current.frames,
-          at: elapsed,
+          at,
           blob,
-        }),
-      );
-      current.frames++;
-      current.elapsed = elapsed;
-      await saveSession(current);
+        });
+        tx.objectStore("sessions").put(next);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () =>
+          reject(tx.error || new Error("Storage was interrupted."));
+      });
+      current.frames = next.frames;
+      current.elapsed = at;
+      current.thoughts = [...parkedThoughts];
       updateCaptureTimeline();
     } catch (e) {
       notify(
         "Recording stopped because a frame could not be saved. Your existing frames are kept. Download or delete older sessions to free browser storage.",
       );
       if (session) {
-        setTimeout(() => finishSession(), 0);
+        setTimeout(
+          () =>
+            finishSession(
+              "Recording stopped because browser storage could not save a frame. Your earlier frames are kept; download or delete older sessions to free space.",
+            ),
+          0,
+        );
       }
     } finally {
       captureBusy = false;
@@ -181,6 +204,12 @@ function updateTimer() {
   const value = session ? (duration ? duration - elapsed : elapsed) : duration;
   updateCaptureTimeline();
   $("timer").textContent = duration || session ? formatTime(value) : "00:00";
+  $("quietTime").textContent = $("timer").textContent;
+  if (session)
+    document.title =
+      document.hidden && $("returnReminder").checked
+        ? "Your focus is waiting · Studyharder"
+        : `${$("timer").textContent} · ${paused ? "Paused" : "Focus"} · Studyharder`;
   $("timerRing").style.setProperty(
     "--progress",
     `${duration ? Math.min(100, (elapsed / duration) * 100) : 0}%`,
@@ -189,12 +218,13 @@ function updateTimer() {
 function lockSettings(locked) {
   $("sessionsNav").disabled = locked;
   $("intention").disabled = locked;
+  $("breakLength").disabled = locked;
   document
     .querySelectorAll("[data-minutes]")
     .forEach((b) => (b.disabled = locked));
 }
 async function startSession() {
-  if (session) return;
+  if (session || finishing || exporting) return;
   $("start").disabled = true;
   try {
     if (!db)
@@ -202,6 +232,8 @@ async function startSession() {
         "Browser storage is unavailable. Enable storage for this site and reload.",
       );
     if (!(await enableCamera())) return;
+    endBreak();
+    prepareChime();
     session = {
       id: crypto.randomUUID(),
       title: $("intention").value.trim() || "A little more focused",
@@ -211,6 +243,9 @@ async function startSession() {
       frameIntervalMs: CAPTURE_INTERVAL_MS,
       playbackFps: DEFAULT_PLAYBACK_FPS,
       status: "recording",
+      thoughts: [...parkedThoughts],
+      awayCount: 0,
+      breakMinutes: Number($("breakLength").value),
     };
     await saveSession(session);
     elapsed = 0;
@@ -226,15 +261,18 @@ async function startSession() {
     $("cameraCaption").textContent = "ONE FRAME EVERY SECOND";
     await requestWakeLock();
     await capture();
-    let lastCapture = performance.now();
+    if (!session || finishing) return;
+    let nextCapture = performance.now() + CAPTURE_INTERVAL_MS;
     ticker = setInterval(() => {
       const now = performance.now();
+      if (!session || finishing) return;
       if (!paused) {
         elapsed += (now - lastTick) / 1000;
         updateTimer();
-        if (now - lastCapture >= CAPTURE_INTERVAL_MS) {
+        if (now >= nextCapture) {
           capture();
-          lastCapture = now;
+          nextCapture += CAPTURE_INTERVAL_MS;
+          if (nextCapture <= now) nextCapture = now + CAPTURE_INTERVAL_MS;
         }
         const target = Number($("duration").value) * 60;
         if (target && elapsed >= target) finishSession();
@@ -246,6 +284,12 @@ async function startSession() {
     );
   } catch (e) {
     session = null;
+    clearInterval(ticker);
+    await wakeLock?.release();
+    resetCamera();
+    lockSettings(false);
+    $("start").hidden = false;
+    $("recordingControls").hidden = true;
     notify(e.message);
   } finally {
     $("start").disabled = false;
@@ -259,6 +303,7 @@ function togglePause() {
   $("timerLabel").textContent = paused ? "TAKE A BREATH" : "YOU’RE SHOWING UP";
   $("cameraStatus").innerHTML = paused ? "<i></i> PAUSED" : "<i></i> RECORDING";
   $("cameraStatus").classList.toggle("recording", !paused);
+  updateTimer();
 }
 let finishing = false;
 async function finishSession(message) {
@@ -269,11 +314,17 @@ async function finishSession(message) {
   try {
     await pendingCapture;
     const done = session;
+    done.thoughts = [...parkedThoughts];
     done.elapsed = elapsed;
     done.status = "complete";
     await saveSession(done);
     session = null;
     paused = false;
+    playChime();
+    document.title = "Session complete · Studyharder";
+    setQuietMode(false);
+    parkedThoughts = [];
+    renderThoughts();
     await wakeLock?.release();
     resetCamera();
     lockSettings(false);
@@ -290,7 +341,8 @@ async function finishSession(message) {
     );
     await renderLibrary();
     await openResult(done);
-    if (done.frames) exportVideo();
+    if (done.frames && $("result").open && selectedSession?.id === done.id)
+      exportVideo();
   } catch (e) {
     notify(`Couldn’t finish saving. ${e.message} Try finishing again.`);
   } finally {
@@ -478,6 +530,19 @@ async function openResult(s) {
   selectedSession = { ...s, playbackFps: 24000 / sessionInterval(s) };
   $("exportSpeed").value = "24";
   $("resultTitle").textContent = s.title;
+  $("savedThoughts").hidden = !s.thoughts?.length;
+  $("savedThoughtSummary").textContent =
+    `${s.thoughts?.length || 0} ${(s.thoughts?.length || 0) === 1 ? "thought" : "thoughts"} for later`;
+  $("savedThoughtList").replaceChildren();
+  for (const thought of s.thoughts || []) {
+    const li = document.createElement("li");
+    li.textContent = thought;
+    $("savedThoughtList").append(li);
+  }
+  const minutes = s.breakMinutes ?? Number($("breakLength").value);
+  $("takeBreak").hidden = !minutes;
+  $("takeBreak").textContent = `Take a ${minutes}-minute break →`;
+  $("takeBreak").onclick = () => startBreak(minutes);
   updateClipInfo();
   $("exportStatus").textContent = s.frames
     ? "Explore your frames, then create a video to download."
@@ -524,6 +589,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function exportVideo() {
   if (exporting || !selectedSession?.frames) return;
   const s = selectedSession;
+  exportCancelled = false;
   if (!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream) {
     $("exportStatus").textContent =
       "Video export is unavailable in this browser. Use a current version of Safari or Chrome.";
@@ -543,10 +609,12 @@ async function exportVideo() {
   }
   exporting = true;
   $("makeVideo").disabled = true;
+  $("cancelExport").hidden = false;
   $("closeResult").disabled = true;
   $("exportSpeed").disabled = true;
   $("frameScrubber").disabled = true;
   $("filmstrip").inert = true;
+  $("takeBreak").disabled = true;
   $("exportProgress").hidden = false;
   $("exportProgress").value = 0;
   let outStream, recorder;
@@ -566,19 +634,25 @@ async function exportVideo() {
       videoBitsPerSecond: 3500000,
     });
     const chunks = [];
-    const stopped = new Promise((resolve, reject) => {
+    let encodingError;
+    const stopped = new Promise((resolve) => {
       recorder.ondataavailable = (e) => {
         if (e.data.size) chunks.push(e.data);
       };
       recorder.onstop = resolve;
-      recorder.onerror = (e) =>
-        reject(e.error || new Error("Video encoding failed."));
+      recorder.onerror = (e) => {
+        encodingError = e.error || new Error("Video encoding failed.");
+        if (recorder.state !== "inactive") recorder.stop();
+      };
     });
     recorder.start(1000);
     const encodeStarted = performance.now();
     for (let i = 0; i < s.frames; i++) {
+      if (exportCancelled) throw new Error("Export cancelled");
+      if (encodingError) throw encodingError;
       if (document.hidden && recorder.state === "recording") recorder.pause();
       while (document.hidden) {
+        if (exportCancelled) throw new Error("Export cancelled");
         $("exportStatus").textContent =
           "Export paused. Return to this tab to continue.";
         await wait(300);
@@ -595,11 +669,32 @@ async function exportVideo() {
       await wait(1000 / (s.playbackFps || 12));
     }
     while (performance.now() - encodeStarted < 1200) {
+      if (exportCancelled) throw new Error("Export cancelled");
+      if (encodingError) throw encodingError;
       context.drawImage(out, 0, 0);
       await wait(1000 / (s.playbackFps || 12));
     }
     recorder.stop();
-    await stopped;
+    let stopTimeout;
+    try {
+      await Promise.race([
+        stopped,
+        new Promise((_, reject) => {
+          stopTimeout = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "The video encoder did not finish. Try exporting again.",
+                ),
+              ),
+            15000,
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(stopTimeout);
+    }
+    if (encodingError) throw encodingError;
     const blob = new Blob(chunks, { type: recorder.mimeType });
     if (!blob.size) throw new Error("The encoder produced an empty video.");
     if (outputURL) URL.revokeObjectURL(outputURL);
@@ -615,20 +710,206 @@ async function exportVideo() {
     $("exportStatus").textContent =
       `Your time-lapse is ready. ${(blob.size / 1024 / 1024).toFixed(1)} MB · Save it to keep a copy outside this browser.`;
   } catch (e) {
-    $("exportStatus").textContent =
-      `Couldn’t export: ${e.message} Your frames are still saved; you can try again.`;
-    if (recorder?.state === "recording") recorder.stop();
+    $("exportStatus").textContent = exportCancelled
+      ? "Export cancelled. Your saved frames are ready whenever you want to try again."
+      : `Couldn’t export: ${e.message} Your frames are still saved; you can try again.`;
+    if (recorder && recorder.state !== "inactive") recorder.stop();
   } finally {
     outStream?.getTracks().forEach((t) => t.stop());
     await wakeLock?.release();
     exporting = false;
+    $("cancelExport").hidden = true;
     $("makeVideo").disabled = false;
     $("closeResult").disabled = false;
     $("exportSpeed").disabled = false;
     $("frameScrubber").disabled = false;
     $("filmstrip").inert = false;
+    $("takeBreak").disabled = false;
   }
 }
+let exportCancelled = false;
+let parkedThoughts = [];
+let breakTicker,
+  breakDeadline = 0,
+  audioContext;
+function setQuietMode(enabled) {
+  document.body.classList.toggle("quiet-mode", enabled);
+  $("quietMode").setAttribute("aria-pressed", String(enabled));
+  $("quietMode").textContent = enabled
+    ? "↙ Leave quiet view"
+    : "↗ Quiet view";
+}
+function setSelfView(hidden) {
+  $("preview").style.visibility = hidden ? "hidden" : "visible";
+  $("selfViewCover").hidden = !hidden;
+  $("hideSelf").setAttribute("aria-pressed", String(hidden));
+  $("hideSelf").textContent = hidden ? "Show self-view" : "Hide self-view";
+}
+function renderThoughts() {
+  $("thoughtCount").textContent = parkedThoughts.length;
+  $("thoughtList").replaceChildren();
+  parkedThoughts.forEach((thought, index) => {
+    const li = document.createElement("li");
+    const text = document.createElement("span");
+    text.textContent = thought;
+    const button = document.createElement("button");
+    button.textContent = "×";
+    button.setAttribute("aria-label", `Remove thought: ${thought}`);
+    button.onclick = () => {
+      parkedThoughts.splice(index, 1);
+      renderThoughts();
+      persistThoughts();
+    };
+    li.append(text, button);
+    $("thoughtList").append(li);
+  });
+}
+async function persistThoughts() {
+  await pendingCapture;
+  if (!session) return;
+  session.thoughts = [...parkedThoughts];
+  try {
+    await saveSession(session);
+  } catch {
+    notify(
+      "This thought is visible here, but browser storage could not save it. Free some space before continuing.",
+    );
+  }
+}
+function savePreferences() {
+  try {
+    localStorage.setItem(
+      "studyharder.preferences",
+      JSON.stringify({
+        breakMinutes: $("breakLength").value,
+        returnReminder: $("returnReminder").checked,
+        completionSound: $("completionSound").checked,
+      }),
+    );
+  } catch {}
+}
+function loadPreferences() {
+  try {
+    const p = JSON.parse(
+      localStorage.getItem("studyharder.preferences") || "{}",
+    );
+    if (["0", "5", "10"].includes(p.breakMinutes))
+      $("breakLength").value = p.breakMinutes;
+    if (typeof p.returnReminder === "boolean")
+      $("returnReminder").checked = p.returnReminder;
+    if (typeof p.completionSound === "boolean")
+      $("completionSound").checked = p.completionSound;
+  } catch {}
+}
+function prepareChime() {
+  if (!$("completionSound").checked) return;
+  try {
+    const Audio = window.AudioContext || window.webkitAudioContext;
+    audioContext ||= new Audio();
+    audioContext.resume().catch(() => {});
+  } catch {}
+}
+function playChime() {
+  if (
+    !$("completionSound").checked ||
+    !audioContext ||
+    audioContext.state !== "running"
+  )
+    return;
+  try {
+    const now = audioContext.currentTime;
+    [523.25, 659.25].forEach((frequency, i) => {
+      const oscillator = audioContext.createOscillator(),
+        gain = audioContext.createGain();
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0, now + i * 0.2);
+      gain.gain.linearRampToValueAtTime(0.08, now + i * 0.2 + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.2 + 0.7);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(now + i * 0.2);
+      oscillator.stop(now + i * 0.2 + 0.75);
+    });
+  } catch {}
+}
+function endBreak() {
+  clearInterval(breakTicker);
+  breakDeadline = 0;
+  $("breakPanel").hidden = true;
+  if (!session) document.title = "Studyharder — Your focus, in motion.";
+}
+function startBreak(minutes) {
+  if (exporting || !minutes) return;
+  $("result").close();
+  showView("studio");
+  setQuietMode(false);
+  breakDeadline = performance.now() + minutes * 60000;
+  $("breakPanel").hidden = false;
+  const update = () => {
+    const remaining = Math.max(0, (breakDeadline - performance.now()) / 1000);
+    $("breakTimer").textContent = formatTime(Math.ceil(remaining));
+    document.title = `${formatTime(Math.ceil(remaining))} · Take a breath · Studyharder`;
+    if (!remaining) {
+      clearInterval(breakTicker);
+      playChime();
+      document.title = "Ready for another round? · Studyharder";
+      $("breakTimer").textContent = "Ready?";
+    }
+  };
+  clearInterval(breakTicker);
+  update();
+  breakTicker = setInterval(update, 250);
+  $("breakPanel").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+$("quietMode").onclick = () =>
+  setQuietMode(!document.body.classList.contains("quiet-mode"));
+$("hideSelf").onclick = () =>
+  setSelfView($("hideSelf").getAttribute("aria-pressed") !== "true");
+$("thoughtForm").onsubmit = (e) => {
+  e.preventDefault();
+  const thought = $("thoughtInput").value.trim();
+  if (!thought) return;
+  if (parkedThoughts.length >= 30) {
+    notify(
+      "You have 30 thoughts parked. Let these wait for later, and return to your task.",
+    );
+    return;
+  }
+  parkedThoughts.push(thought);
+  $("thoughtInput").value = "";
+  renderThoughts();
+  persistThoughts();
+};
+["breakLength", "returnReminder", "completionSound"].forEach((id) =>
+  $(id).addEventListener("change", () => {
+    savePreferences();
+    if (id === "completionSound") prepareChime();
+  }),
+);
+$("endBreak").onclick = () => {
+  endBreak();
+  $("intention").focus();
+};
+document.addEventListener("keydown", (e) => {
+  if (
+    e.target.matches("input, textarea, select, button, a") ||
+    $("result").open ||
+    e.metaKey ||
+    e.ctrlKey ||
+    e.altKey ||
+    e.repeat
+  )
+    return;
+  if (e.code === "Space" && session) {
+    e.preventDefault();
+    togglePause();
+  }
+  if (e.key === "Escape") setQuietMode(false);
+});
+loadPreferences();
+$("cancelExport").onclick = () => {
+  exportCancelled = true;
+};
 $("frameScrubber").oninput = (e) => seekResult(e.target.value);
 $("exportSpeed").onchange = () => {
   if (exporting) return;
@@ -641,7 +922,7 @@ $("exportSpeed").onchange = () => {
   updateClipInfo();
   seekResult($("frameScrubber").value);
 };
-$("resultVideo").addEventListener("timeupdate", () => {
+$("resultVideo").addEventListener("timeupdate", async () => {
   if (!outputURL || !selectedSession?.frames) return;
   const index = Math.min(
     selectedSession.frames - 1,
@@ -650,6 +931,12 @@ $("resultVideo").addEventListener("timeupdate", () => {
   $("frameScrubber").value = index;
   $("framePosition").textContent =
     `Frame ${index + 1} of ${selectedSession.frames}`;
+  const id = selectedSession.id;
+  const frame = await getFrame(id, index);
+  if (selectedSession.id === id && frame)
+    $("frameTime").textContent = formatTime(
+      frame.at ?? (index * sessionInterval(selectedSession)) / 1000,
+    );
 });
 $("enableCamera").onclick = enableCamera;
 $("start").onclick = startSession;
@@ -666,7 +953,13 @@ $("closeResult").onclick = () => {
 $("result").addEventListener("cancel", (e) => {
   if (exporting) e.preventDefault();
 });
-$("result").addEventListener("close", () => $("resultVideo").pause());
+$("result").addEventListener("close", () => {
+  $("resultVideo").pause();
+  resultVersion++;
+  seekVersion++;
+  resultURLs.forEach(URL.revokeObjectURL);
+  resultURLs = [];
+});
 $("mirror").onclick = () => {
   const enabled = $("mirror").getAttribute("aria-pressed") !== "true";
   $("mirror").setAttribute("aria-pressed", String(enabled));
@@ -686,15 +979,18 @@ document.querySelectorAll("[data-minutes]").forEach(
     }),
 );
 document.addEventListener("visibilitychange", () => {
-  if (session) {
-    if (document.hidden)
-      notify(
-        "This tab is hidden. Capture may slow down; return here to keep your time-lapse consistent.",
-      );
-    else {
-      requestWakeLock();
-      notify("Welcome back. Keep this tab visible for consistent capture.");
-    }
+  if (!session) return;
+  if (document.hidden) {
+    session.awayCount = (session.awayCount || 0) + 1;
+    if ($("returnReminder").checked)
+      document.title = "Your focus is waiting · Studyharder";
+    notify(
+      "This tab is hidden. Capture may slow down; keep it visible for a consistent time-lapse.",
+    );
+  } else {
+    requestWakeLock();
+    updateTimer();
+    notify(`Welcome back. One small next step on “${session.title}”.`);
   }
 });
 window.addEventListener("beforeunload", (e) => {

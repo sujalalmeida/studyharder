@@ -27,6 +27,7 @@
       <span class="local"><i></i> Just you. Stored locally.</span>
     </header>
     <main>
+      <div id="notice" class="notice" role="status" hidden></div>
       <section id="studio">
         <div class="intro">
           <div>
@@ -43,10 +44,36 @@
               <path d="M3 6 Q55 2 58 28 M45 21l13 8 7-13" /></svg
           ></span>
         </div>
+        <div class="studio-toolbar">
+          <p>
+            <span class="status-dot"></span> One task. One frame. One step
+            forward.
+          </p>
+          <div>
+            <button
+              id="hideSelf"
+              class="toolbar-button"
+              aria-pressed="false"
+              disabled
+            >
+              Hide self-view</button
+            ><button id="quietMode" class="toolbar-button" aria-pressed="false">
+              ↗ Quiet view
+            </button>
+          </div>
+        </div>
         <div class="workspace">
           <section class="camera-card">
             <div class="camera" id="camera">
               <video id="preview" muted autoplay playsinline></video>
+              <div id="selfViewCover" class="self-view-cover" hidden>
+                <span class="quiet-flower">✳</span>
+                <p>Be here, with your work.</p>
+                <span id="quietTime">25:00</span
+                ><small
+                  >Camera is on. Your time-lapse is still being captured.</small
+                >
+              </div>
               <div class="camera-placeholder" id="placeholder">
                 <div class="desk-art">
                   <span class="sun">✳</span>
@@ -133,7 +160,8 @@
             <div class="timer">
               <div class="timer-ring" id="timerRing">
                 <div>
-                  <span id="timer">25:00</span
+                  <span id="timer" role="timer" aria-label="Focus timer"
+                    >25:00</span
                   ><span id="timerLabel">A FRESH START</span>
                 </div>
               </div>
@@ -153,7 +181,68 @@
             </div>
           </aside>
         </div>
-        <div id="notice" class="notice" role="status" hidden></div>
+
+        <div class="focus-companions">
+          <section class="thought-card">
+            <div class="tool-heading">
+              <span class="tool-icon">↳</span>
+              <div>
+                <h2>A thought can wait.</h2>
+                <p>Park it here. Come back to the task in front of you.</p>
+              </div>
+              <span id="thoughtCount" class="thought-count">0</span>
+            </div>
+            <form id="thoughtForm">
+              <label class="sr-only" for="thoughtInput"
+                >A distracting thought to revisit later</label
+              ><input
+                id="thoughtInput"
+                maxlength="160"
+                placeholder="Something to look up? A thing to remember?"
+              /><button type="submit" class="outline">Park it ↳</button>
+            </form>
+            <ul id="thoughtList" class="thought-list"></ul>
+            <p class="tool-footnote">
+              Saved with your session. Nothing to act on right now.
+            </p>
+          </section>
+          <section class="rhythm-card">
+            <div class="tool-heading">
+              <span class="tool-icon">◷</span>
+              <div>
+                <h2>Find your rhythm.</h2>
+                <p>A little structure, on your terms.</p>
+              </div>
+            </div>
+            <div class="rhythm-options">
+              <label for="breakLength">After focus, offer a break</label
+              ><select id="breakLength">
+                <option value="0">No break</option>
+                <option value="5" selected>5 minutes</option>
+                <option value="10">10 minutes</option></select
+              ><label class="check-option"
+                ><input id="returnReminder" type="checkbox" checked /><span
+                  >Tab title reminds me to return</span
+                ></label
+              ><label class="check-option"
+                ><input id="completionSound" type="checkbox" /><span
+                  >Gentle chime when I finish</span
+                ></label
+              >
+            </div>
+          </section>
+        </div>
+        <section id="breakPanel" class="break-panel" hidden>
+          <div>
+            <p class="eyebrow">REST IS PART OF THE WORK</p>
+            <h2>A little room to breathe.</h2>
+            <p>
+              Camera off. Stretch, look away from the screen, get some water.
+            </p>
+          </div>
+          <span id="breakTimer">05:00</span
+          ><button id="endBreak" class="outline">Back to focus</button>
+        </section>
         <div class="below">
           <div class="how">
             <p class="eyebrow">LESS FRICTION. MORE FOCUS.</p>
@@ -263,12 +352,20 @@
         ><span id="clipLength"></span>
       </div>
       <p id="resultInfo"></p>
+      <details id="savedThoughts" class="saved-thoughts" hidden>
+        <summary id="savedThoughtSummary">Thoughts for later</summary>
+        <ul id="savedThoughtList"></ul>
+      </details>
       <progress id="exportProgress" max="1" value="0" hidden></progress>
       <p id="exportStatus" role="status"></p>
       <div class="dialog-actions">
+        <button class="outline" id="cancelExport" hidden>Cancel export</button>
         <button class="outline" id="makeVideo">Create time-lapse</button
         ><a id="download" class="start" hidden>↓ Download time-lapse</a>
       </div>
+      <button id="takeBreak" class="break-action" hidden>
+        Take a 5-minute break →
+      </button>
       <p class="fine-print">
         Export runs in this tab. Keep it visible until your video is ready.
       </p>
