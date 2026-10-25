@@ -262,17 +262,18 @@ async function startSession() {
     await requestWakeLock();
     await capture();
     if (!session || finishing) return;
-    let nextCapture = performance.now() + CAPTURE_INTERVAL_MS;
+    let nextCaptureAt = CAPTURE_INTERVAL_MS / 1000;
     ticker = setInterval(() => {
       const now = performance.now();
       if (!session || finishing) return;
       if (!paused) {
         elapsed += (now - lastTick) / 1000;
         updateTimer();
-        if (now >= nextCapture) {
+        if (elapsed >= nextCaptureAt) {
           capture();
-          nextCapture += CAPTURE_INTERVAL_MS;
-          if (nextCapture <= now) nextCapture = now + CAPTURE_INTERVAL_MS;
+          nextCaptureAt += CAPTURE_INTERVAL_MS / 1000;
+          if (nextCaptureAt <= elapsed)
+            nextCaptureAt = elapsed + CAPTURE_INTERVAL_MS / 1000;
         }
         const target = Number($("duration").value) * 60;
         if (target && elapsed >= target) finishSession();
@@ -711,6 +712,9 @@ async function exportVideo() {
     $("resultVideo").src = outputURL;
     $("resultVideo").hidden = false;
     $("framePreview").hidden = true;
+    $("frameScrubber").value = 0;
+    $("framePosition").textContent = `Frame 1 of ${s.frames}`;
+    $("frameTime").textContent = formatTime(first.at ?? 0);
     $("download").href = outputURL;
     $("download").download =
       `studyharder-${new Date(s.created).toISOString().slice(0, 10)}.${mime.includes("mp4") ? "mp4" : "webm"}`;

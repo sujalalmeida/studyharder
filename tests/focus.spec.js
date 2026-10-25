@@ -86,6 +86,10 @@ test("1 fps capture, pause, hidden self-view, thoughts, export, and timeline", a
   await expect(page.locator("#download")).toBeVisible({ timeout: 20000 });
   const saved = (await sessions(page))[0];
   expect(saved.frameIntervalMs).toBe(1000);
+  expect(saved.frames).toBeLessThanOrEqual(Math.floor(saved.elapsed) + 1);
+  await expect(page.locator("#framePosition")).toHaveText(
+    `Frame 1 of ${saved.frames}`,
+  );
   expect(saved.playbackFps).toBe(24);
   expect(saved.status).toBe("complete");
   expect(saved.thoughts).toEqual(["Look up practice questions"]);
