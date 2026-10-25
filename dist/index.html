@@ -1,13 +1,278 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f7f8f2"><meta name="description" content="Settle in, find your focus, and turn your study session into a time-lapse. Private, local, and lightweight."><title>Studyharder — Your focus, in motion.</title><link rel="stylesheet" href="style.css"></head>
-<body>
-<header><a class="brand" href="./" aria-label="Studyharder home"><span class="brand-icon">✳</span> studyharder<span class="brand-dot">.</span></a><nav><button class="nav active" id="studioNav">Focus studio</button><button class="nav" id="sessionsNav">My sessions <span id="count">0</span></button></nav><span class="local"><i></i> Just you. Stored locally.</span></header>
-<main><section id="studio"><div class="intro"><div><p class="eyebrow">A LITTLE ACCOUNTABILITY. A LOT OF POSSIBILITY.</p><h1>Your focus, <em>in motion.</em></h1><p class="subtitle">Show up for yourself. We’ll capture the progress.</p></div><span class="intro-note">One session at a time.<svg viewBox="0 0 70 35"><path d="M3 6 Q55 2 58 28 M45 21l13 8 7-13"/></svg></span></div>
-<div class="workspace"><section class="camera-card"><div class="camera" id="camera"><video id="preview" muted autoplay playsinline></video><div class="camera-placeholder" id="placeholder"><div class="desk-art"><span class="sun">✳</span><div class="plant">⌇<span>❧</span></div><div class="laptop"><span>✳</span></div><div class="books"></div><div class="desk-line"></div></div><h2>Your next chapter starts here.</h2><p>A clear desk. A deep breath. A little focus.</p><button class="camera-enable" id="enableCamera">↗ &nbsp; Enable camera</button><span class="permission-note">Your camera only turns on when you allow it.</span></div><div class="camera-top"><span class="live-pill" id="cameraStatus"><i></i> CAMERA OFF</span><span class="resolution">720p · No audio</span></div><div class="camera-bottom"><span id="cameraCaption">YOUR SPACE TO FOCUS</span><button id="mirror" title="Mirror camera preview" aria-label="Mirror camera preview" aria-pressed="true">⇄</button></div></div><div class="camera-footer"><span><span class="tiny-lock">▣</span> Private by design. Your camera never leaves this device.</span><span>Make yourself proud. <span class="spark">✧</span></span></div></section>
-<aside class="focus-panel"><div class="panel-heading"><span class="eyebrow">LET’S MAKE TIME</span><span class="mini-sun">✳</span></div><label class="field-label" for="intention">What are you working on?</label><input id="intention" maxlength="80" placeholder="e.g. Finally understanding calculus" autocomplete="off"><div class="duration-heading"><label class="field-label" for="duration">Set your focus time</label><span>NO PRESSURE, JUST PROGRESS</span></div><div class="durations" id="durationChoices"><button data-minutes="25" class="selected">25 <small>min</small></button><button data-minutes="50">50 <small>min</small></button><button data-minutes="0">∞ <small>open</small></button></div><select id="duration" aria-label="Focus duration" hidden><option value="25">25</option><option value="50">50</option><option value="0">0</option></select><div class="timer"><div class="timer-ring" id="timerRing"><div><span id="timer">25:00</span><span id="timerLabel">A FRESH START</span></div></div></div><button class="start" id="start">▶ &nbsp; Start Focus</button><div class="recording-controls" id="recordingControls" hidden><button id="pause">Ⅱ Pause</button><button id="finish">■ Finish session</button></div><p class="start-note" id="startNote">Your only job? Be here.</p><div class="output-note"><span>↗</span><p><strong>A little time-lapse. A big reminder.</strong><br>Every second becomes a frame of your story.</p></div></aside></div>
-<div id="notice" class="notice" role="status" hidden></div>
-<div class="below"><div class="how"><p class="eyebrow">LESS FRICTION. MORE FOCUS.</p><div class="steps"><div><span>01</span><p><strong>Find your frame</strong><br>Let your camera be your accountability buddy.</p></div><div><span>02</span><p><strong>Get into your flow</strong><br>Keep this tab visible and your laptop awake.</p></div><div><span>03</span><p><strong>See what you did</strong><br>Save a time-lapse worth feeling good about.</p></div></div></div><blockquote>“Little by little,<br><em>a little becomes a lot.</em>”<span>YOUR DAILY REMINDER</span></blockquote></div></section>
-<section id="library" hidden><div class="intro"><div><p class="eyebrow">PROOF YOU SHOWED UP</p><h1>Small steps. <em>Real progress.</em></h1><p class="subtitle">Your sessions, saved in this browser on this device.</p></div><button class="outline" id="newSession">＋ New session</button></div><div id="sessionGrid" class="session-grid"></div></section>
-<footer><span>Made for the moments that add up.</span><span>STAY PRESENT. &nbsp; KEEP GOING. <span class="spark">✳</span></span></footer></main>
-<dialog id="result"><div class="dialog-heading"><div><p class="eyebrow">LOOK AT YOU GO</p><h2 id="resultTitle">You showed up.</h2></div><button id="closeResult" aria-label="Close">×</button></div><video id="resultVideo" controls playsinline></video><p id="resultInfo"></p><progress id="exportProgress" max="1" value="0" hidden></progress><p id="exportStatus" role="status"></p><div class="dialog-actions"><button class="outline" id="makeVideo">Create time-lapse</button><a id="download" class="start" hidden>↓ Download time-lapse</a></div><p class="fine-print">Export runs in this tab. Keep it visible until your video is ready.</p></dialog>
-<script src="app.js" defer></script></body></html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f8f2" />
+    <meta
+      name="description"
+      content="Settle in, find your focus, and turn your study session into a time-lapse. Private, local, and lightweight."
+    />
+    <title>Studyharder — Your focus, in motion.</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="./" aria-label="Studyharder home"
+        ><span class="brand-icon">✳</span> studyharder<span class="brand-dot"
+          >.</span
+        ></a
+      >
+      <nav>
+        <button class="nav active" id="studioNav">Focus studio</button
+        ><button class="nav" id="sessionsNav">
+          My sessions <span id="count">0</span>
+        </button>
+      </nav>
+      <span class="local"><i></i> Just you. Stored locally.</span>
+    </header>
+    <main>
+      <section id="studio">
+        <div class="intro">
+          <div>
+            <p class="eyebrow">
+              A LITTLE ACCOUNTABILITY. A LOT OF POSSIBILITY.
+            </p>
+            <h1>Your focus, <em>in motion.</em></h1>
+            <p class="subtitle">
+              Show up for yourself. We’ll capture the progress.
+            </p>
+          </div>
+          <span class="intro-note"
+            >One session at a time.<svg viewBox="0 0 70 35">
+              <path d="M3 6 Q55 2 58 28 M45 21l13 8 7-13" /></svg
+          ></span>
+        </div>
+        <div class="workspace">
+          <section class="camera-card">
+            <div class="camera" id="camera">
+              <video id="preview" muted autoplay playsinline></video>
+              <div class="camera-placeholder" id="placeholder">
+                <div class="desk-art">
+                  <span class="sun">✳</span>
+                  <div class="plant">⌇<span>❧</span></div>
+                  <div class="laptop"><span>✳</span></div>
+                  <div class="books"></div>
+                  <div class="desk-line"></div>
+                </div>
+                <h2>Your next chapter starts here.</h2>
+                <p>A clear desk. A deep breath. A little focus.</p>
+                <button class="camera-enable" id="enableCamera">
+                  ↗ &nbsp; Enable camera</button
+                ><span class="permission-note"
+                  >Your camera only turns on when you allow it.</span
+                >
+              </div>
+              <div class="camera-top">
+                <span class="live-pill" id="cameraStatus"
+                  ><i></i> CAMERA OFF</span
+                ><span class="resolution">720p · No audio</span>
+              </div>
+              <div class="camera-bottom">
+                <span id="cameraCaption">YOUR SPACE TO FOCUS</span
+                ><button
+                  id="mirror"
+                  title="Mirror camera preview"
+                  aria-label="Mirror camera preview"
+                  aria-pressed="true"
+                >
+                  ⇄
+                </button>
+              </div>
+            </div>
+            <div class="capture-timeline">
+              <div>
+                <span class="capture-label">SESSION TIMELINE</span
+                ><span id="captureCount">0 frames · 1 frame / sec</span>
+              </div>
+              <div class="capture-track">
+                <span id="captureProgress"></span>
+              </div>
+              <div class="timeline-times">
+                <span>Start</span
+                ><span id="captureElapsed">Ready for your first frame</span
+                ><span id="captureTarget">25 min</span>
+              </div>
+            </div>
+            <div class="camera-footer">
+              <span
+                ><span class="tiny-lock">▣</span> Private by design. Your camera
+                never leaves this device.</span
+              ><span>Make yourself proud. <span class="spark">✧</span></span>
+            </div>
+          </section>
+          <aside class="focus-panel">
+            <div class="panel-heading">
+              <span class="eyebrow">LET’S MAKE TIME</span
+              ><span class="mini-sun">✳</span>
+            </div>
+            <label class="field-label" for="intention"
+              >What are you working on?</label
+            ><input
+              id="intention"
+              maxlength="80"
+              placeholder="e.g. Finally understanding calculus"
+              autocomplete="off"
+            />
+            <div class="duration-heading">
+              <label class="field-label" for="duration"
+                >Set your focus time</label
+              ><span>NO PRESSURE, JUST PROGRESS</span>
+            </div>
+            <div class="durations" id="durationChoices">
+              <button data-minutes="25" class="selected">
+                25 <small>min</small></button
+              ><button data-minutes="50">50 <small>min</small></button
+              ><button data-minutes="0">∞ <small>open</small></button>
+            </div>
+            <select id="duration" aria-label="Focus duration" hidden>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="0">0</option>
+            </select>
+            <div class="timer">
+              <div class="timer-ring" id="timerRing">
+                <div>
+                  <span id="timer">25:00</span
+                  ><span id="timerLabel">A FRESH START</span>
+                </div>
+              </div>
+            </div>
+            <button class="start" id="start">▶ &nbsp; Start Focus</button>
+            <div class="recording-controls" id="recordingControls" hidden>
+              <button id="pause">Ⅱ Pause</button
+              ><button id="finish">■ Finish session</button>
+            </div>
+            <p class="start-note" id="startNote">Your only job? Be here.</p>
+            <div class="output-note">
+              <span>↗</span>
+              <p>
+                <strong>A little time-lapse. A big reminder.</strong><br />Every
+                second becomes a frame of your story.
+              </p>
+            </div>
+          </aside>
+        </div>
+        <div id="notice" class="notice" role="status" hidden></div>
+        <div class="below">
+          <div class="how">
+            <p class="eyebrow">LESS FRICTION. MORE FOCUS.</p>
+            <div class="steps">
+              <div>
+                <span>01</span>
+                <p>
+                  <strong>Find your frame</strong><br />Let your camera be your
+                  accountability buddy.
+                </p>
+              </div>
+              <div>
+                <span>02</span>
+                <p>
+                  <strong>Get into your flow</strong><br />Keep this tab visible
+                  and your laptop awake.
+                </p>
+              </div>
+              <div>
+                <span>03</span>
+                <p>
+                  <strong>See what you did</strong><br />Save a time-lapse worth
+                  feeling good about.
+                </p>
+              </div>
+            </div>
+          </div>
+          <blockquote>
+            “Little by little,<br /><em>a little becomes a lot.</em>”<span
+              >YOUR DAILY REMINDER</span
+            >
+          </blockquote>
+        </div>
+      </section>
+      <section id="library" hidden>
+        <div class="intro">
+          <div>
+            <p class="eyebrow">PROOF YOU SHOWED UP</p>
+            <h1>Small steps. <em>Real progress.</em></h1>
+            <p class="subtitle">
+              Your sessions, saved in this browser on this device.
+            </p>
+          </div>
+          <button class="outline" id="newSession">＋ New session</button>
+        </div>
+        <div class="library-stats" aria-label="Your study progress">
+          <div><span id="totalFocus">0m</span><small>TOTAL FOCUS</small></div>
+          <div>
+            <span id="totalSessions">0</span><small>SESSIONS SAVED</small>
+          </div>
+          <div><span id="todayFocus">0m</span><small>FOCUSED TODAY</small></div>
+        </div>
+        <div id="sessionGrid" class="session-grid"></div>
+      </section>
+      <footer>
+        <span>Made for the moments that add up.</span
+        ><span
+          >STAY PRESENT. &nbsp; KEEP GOING. <span class="spark">✳</span></span
+        >
+      </footer>
+    </main>
+    <dialog id="result">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">LOOK AT YOU GO</p>
+          <h2 id="resultTitle">You showed up.</h2>
+        </div>
+        <button id="closeResult" aria-label="Close">×</button>
+      </div>
+      <div class="result-stage">
+        <video id="resultVideo" controls playsinline hidden></video
+        ><canvas
+          id="framePreview"
+          width="1280"
+          height="720"
+          aria-label="Selected session frame"
+        ></canvas>
+      </div>
+      <div class="timeline-heading">
+        <label for="frameScrubber">Your session timeline</label
+        ><span id="framePosition">Frame 0 of 0</span>
+      </div>
+      <div
+        id="filmstrip"
+        class="filmstrip"
+        aria-label="Session snapshots"
+      ></div>
+      <input
+        id="frameScrubber"
+        type="range"
+        min="0"
+        max="0"
+        value="0"
+        aria-label="Scrub session frames"
+      />
+      <div class="timeline-times">
+        <span>00:00</span
+        ><output id="frameTime" for="frameScrubber">00:00</output
+        ><span id="timelineEnd">00:00</span>
+      </div>
+      <div class="export-options">
+        <label for="exportSpeed">Time-lapse speed</label
+        ><select id="exportSpeed">
+          <option value="12">12× · Take it slow</option>
+          <option value="24" selected>24× · Just right</option>
+          <option value="48">48× · Quick recap</option></select
+        ><span id="clipLength"></span>
+      </div>
+      <p id="resultInfo"></p>
+      <progress id="exportProgress" max="1" value="0" hidden></progress>
+      <p id="exportStatus" role="status"></p>
+      <div class="dialog-actions">
+        <button class="outline" id="makeVideo">Create time-lapse</button
+        ><a id="download" class="start" hidden>↓ Download time-lapse</a>
+      </div>
+      <p class="fine-print">
+        Export runs in this tab. Keep it visible until your video is ready.
+      </p>
+    </dialog>
+    <script src="app.js" defer></script>
+  </body>
+</html>
