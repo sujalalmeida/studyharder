@@ -11,3 +11,6 @@ __pycache__/
 *-preview.png
 test-results/
 playwright-report/
+.wrangler/
+.dev.vars
+.dev.vars.*

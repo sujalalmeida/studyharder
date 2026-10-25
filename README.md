@@ -12,6 +12,36 @@ python3 -m http.server 4173 --directory dist
 
 Open http://localhost:4173 in Safari or Chrome. HTTPS or localhost is required for camera access. The website is plain HTML, CSS, and JavaScript: no build step or runtime packages.
 
+## Deploy to Cloudflare
+
+This repository includes `wrangler.jsonc` for a static-assets Cloudflare Worker. It serves only `dist/` and explicitly enables the production `workers.dev` URL and preview URLs. The `.openai/hosting.json` file is used by Sites; Cloudflare does not read it as its deployment configuration.
+
+For an existing Cloudflare application connected to GitHub, use:
+
+- Repository root directory: `/` (the root of this repository).
+- Production branch: `main`.
+- Build command: `npm run build`.
+- Deploy command: `npm run deploy` (or `npx wrangler deploy`).
+- Worker name: `studyharder`. If your existing Worker has a different name, change `name` in `wrangler.jsonc` to match it before deploying, or use `npm run deploy -- --name YOUR_EXISTING_WORKER`.
+
+`dist/` is already checked in. The build command validates the JavaScript; no framework build or server entry point is needed. Wrangler is a development/deployment dependency only and is not shipped to visitors.
+
+To verify and deploy from your computer:
+
+```sh
+npm ci
+npm run build
+npm run deploy:check
+npx wrangler login
+npm run deploy
+```
+
+If the Cloudflare dashboard says **No URLs enabled**, open the Worker’s **Settings → Domains & Routes** (or **Domains** tab), then enable its **workers.dev** URL. Enable Preview URLs if you want version preview links too. Redeploying this configuration keeps those options enabled. If your account has no `workers.dev` subdomain yet, Cloudflare must first let you choose one in the account’s Workers settings. The actual production address will be shown by Cloudflare after deployment; a successful dry run does not establish a live URL.
+
+If you created a **Cloudflare Pages** project instead, leave the build command blank and use **`dist` as the build output directory**. Pages uses a `pages.dev` address; the Wrangler configuration here targets Workers.
+
+Cloudflare documentation: [workers.dev URLs](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/), [Wrangler configuration](https://developers.cloudflare.com/workers/wrangler/configuration/).
+
 ## Recording and timeline
 
 - 25-minute, 50-minute, or open-ended sessions, with pause/resume.
