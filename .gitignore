@@ -9,3 +9,5 @@ __pycache__/
 *.pyc
 *-deploy.tar.gz
 *-preview.png
+test-results/
+playwright-report/

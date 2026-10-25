@@ -1,6 +1,8 @@
 # Studyharder
 
-A lightweight, buildless focus studio. No framework, server database, camera upload, or audio recording.
+A lightweight study recorder for MacBooks. Set one intention, start a focus session, and keep a time-lapse of the work you put in. Camera frames stay in your browser; no audio or camera uploads.
+
+[Open the private site](https://studyharder-focus-studio.foamyeel16.chatgpt.site/)
 
 ## Run locally
 
@@ -8,25 +10,53 @@ A lightweight, buildless focus studio. No framework, server database, camera upl
 python3 -m http.server 4173 --directory dist
 ```
 
-Open http://localhost:4173 in Safari or Chrome. Camera access requires localhost or HTTPS.
+Open http://localhost:4173 in Safari or Chrome. HTTPS or localhost is required for camera access. The website is plain HTML, CSS, and JavaScript: no build step or runtime packages.
 
-## How it works
+## Recording and timeline
 
-- 25-minute, 50-minute, and open-ended focus sessions with pause/resume.
-- Captures a 1280×720 JPEG frame every second and saves it directly to IndexedDB.
-- Finishing creates a 24 fps time-lapse (approximately 24× speed) with browser-native canvas capture and MediaRecorder. Short videos have a minimum encoding duration of 1.2 seconds.
-- MP4 is preferred when supported; otherwise exports WebM. Encoding runs in real time at the output duration. Frames remain available if encoding fails.
-- Session library supports export again and deletion. No Firebase configuration needed.
-- Interrupted sessions retain frames saved before interruption. Browser site-data clearing removes sessions; download videos to keep durable copies.
-- Keep the recording/export tab visible and the laptop awake. Background tab throttling and laptop sleep can cause gaps. The app requests a screen wake lock when supported.
-- The mirrored live preview does not mirror the exported video.
+- 25-minute, 50-minute, or open-ended sessions, with pause/resume.
+- One 1280×720 JPEG frame per second, saved incrementally to IndexedDB together with its session metadata in a single transaction.
+- A live capture timeline, frame count, and focus progress.
+- Clickable filmstrip snapshots and a frame scrubber with timestamps from the original session.
+- Export at 12×, 24×, or 48× speed. Finishing automatically creates a 24× time-lapse. Export can be cancelled and retried.
+- MP4 when the browser supports it, with WebM as a fallback. Native browser encoding runs at the output duration; very short clips have a minimum duration of about 1.2 seconds.
+- Session history grouped by date, with total focus, session count, and today's focus time.
+- Older two-second recordings remain readable and keep their correct playback timing.
+
+## Focus companions
+
+- **Quiet view:** strips away navigation and decorative content while keeping session controls and the thought pad available.
+- **Hide self-view:** keeps the camera capturing while hiding your live image. A clear indicator confirms that the camera remains on.
+- **Thought parking:** jot down distractions, then return to your task. Thoughts are saved with the current session and can be reviewed in its summary. Thoughts entered before starting are a temporary draft until the session begins.
+- **Break timer:** opt for a 5- or 10-minute break after a session. Camera recording is off during breaks; another focus session starts only when you choose.
+- **Optional completion chime and tab title reminders.** Preferences stay on this device. While recording, Space pauses/resumes when focus is outside an input or control; Escape leaves quiet view.
+
+A practical routine: choose one small outcome, put your phone out of reach, use quiet view, and park unrelated thoughts instead of acting on them. Take the offered break before the next session.
+
+## Browser storage and capture limits
+
+Keep the recording/export tab visible and the laptop awake. Background throttling or sleep can cause gaps; this website cannot block other websites or guarantee capture while the laptop sleeps. A screen wake lock is requested when supported. Export pauses when the tab is hidden.
+
+Sessions are local to the browser and device. Clearing site data removes them, and private browsing may discard them. Download videos for a durable copy. Interrupted sessions retain frames saved before interruption. Delete old sessions from My sessions to free browser storage. The mirrored live preview does not mirror the exported video.
+
+Firebase is not configured. A future integration can authenticate users and upload finished videos to Firebase Storage, with session metadata in Firestore.
 
 ## Verification
 
-`node --check dist/app.js`
+Development tools are optional and are not shipped with the website. Tests require Node.js, Python 3, and an installed Google Chrome:
 
-`python3 tests/serve.py` serves the app at http://127.0.0.1:4174 with a synthetic canvas camera. This separate origin does not request the real camera. Use it to exercise Start Focus, pause/resume, Finish, export, and session recovery after reload. Test harness files are not deployed.
+```sh
+npm ci
+npm run check
+npm test
+```
 
-## Future Firebase integration
+The Playwright suite uses a synthetic canvas camera on a separate local origin; it never requests your physical camera. It covers one-second recording, pause/resume, hidden self-view, thoughts, MP4/WebM download, timeline scrubbing, export speed changes, break timers, preferences, responsive layouts, interrupted sessions, older recordings, cancellation, and storage failure.
 
-This version stores camera frames locally and makes no video upload requests. A future integration can upload finished video blobs to Firebase Storage and session metadata to Firestore after authentication. Firebase is intentionally not configured in this version.
+For a manual synthetic-camera check:
+
+```sh
+python3 tests/serve.py
+```
+
+Open http://127.0.0.1:4174. Test data stays on that origin. To try your actual camera, use the normal local site instead.
