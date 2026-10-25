@@ -317,7 +317,12 @@ async function finishSession(message) {
     done.thoughts = [...parkedThoughts];
     done.elapsed = elapsed;
     done.status = "complete";
-    await saveSession(done);
+    let finalSaveFailed = false;
+    try {
+      await saveSession(done);
+    } catch {
+      finalSaveFailed = true;
+    }
     session = null;
     paused = false;
     playChime();
@@ -336,8 +341,10 @@ async function finishSession(message) {
     elapsed = 0;
     updateTimer();
     notify(
-      message ||
-        "Session saved on this device. Your progress is yours to keep.",
+      finalSaveFailed
+        ? "Session stopped. Browser storage could not save the final details, but your captured frames are kept. Download your time-lapse now; the session may appear as recovered later."
+        : message ||
+            "Session saved on this device. Your progress is yours to keep.",
     );
     await renderLibrary();
     await openResult(done);
@@ -564,6 +571,7 @@ async function openResult(s) {
   if (!$("result").open) $("result").showModal();
   if (s.frames) await seekResult(0);
   const count = Math.min(8, s.frames);
+  const snapshots = document.createDocumentFragment();
   for (let i = 0; i < count; i++) {
     const index =
       count === 1 ? 0 : Math.round((i * (s.frames - 1)) / (count - 1));
@@ -582,8 +590,9 @@ async function openResult(s) {
     time.textContent = at;
     button.append(img, time);
     button.onclick = () => seekResult(index);
-    $("filmstrip").append(button);
+    snapshots.append(button);
   }
+  if (version === resultVersion) $("filmstrip").append(snapshots);
 }
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function exportVideo() {
@@ -926,14 +935,24 @@ $("resultVideo").addEventListener("timeupdate", async () => {
   if (!outputURL || !selectedSession?.frames) return;
   const index = Math.min(
     selectedSession.frames - 1,
-    Math.floor($("resultVideo").currentTime * sessionFPS(selectedSession)),
+    Math.floor(
+      $("resultVideo").currentTime * sessionFPS(selectedSession) + 0.001,
+    ),
   );
   $("frameScrubber").value = index;
   $("framePosition").textContent =
     `Frame ${index + 1} of ${selectedSession.frames}`;
   const id = selectedSession.id;
+  const version = resultVersion,
+    currentSeek = seekVersion;
   const frame = await getFrame(id, index);
-  if (selectedSession.id === id && frame)
+  if (
+    outputURL &&
+    version === resultVersion &&
+    currentSeek === seekVersion &&
+    selectedSession.id === id &&
+    frame
+  )
     $("frameTime").textContent = formatTime(
       frame.at ?? (index * sessionInterval(selectedSession)) / 1000,
     );
