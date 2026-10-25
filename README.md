@@ -13,8 +13,8 @@ Open http://localhost:4173 in Safari or Chrome. Camera access requires localhost
 ## How it works
 
 - 25-minute, 50-minute, and open-ended focus sessions with pause/resume.
-- Captures a 1280×720 JPEG frame every two seconds and saves it directly to IndexedDB.
-- Finishing creates a 12 fps time-lapse (approximately 24× speed) with browser-native canvas capture and MediaRecorder. Short videos have a minimum encoding duration of 1.2 seconds.
+- Captures a 1280×720 JPEG frame every second and saves it directly to IndexedDB.
+- Finishing creates a 24 fps time-lapse (approximately 24× speed) with browser-native canvas capture and MediaRecorder. Short videos have a minimum encoding duration of 1.2 seconds.
 - MP4 is preferred when supported; otherwise exports WebM. Encoding runs in real time at the output duration. Frames remain available if encoding fails.
 - Session library supports export again and deletion. No Firebase configuration needed.
 - Interrupted sessions retain frames saved before interruption. Browser site-data clearing removes sessions; download videos to keep durable copies.
